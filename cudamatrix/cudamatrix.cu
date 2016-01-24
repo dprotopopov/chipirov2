@@ -253,11 +253,11 @@ int main(int argc, char* argv[])
 				for (auto i = 1; i < 32; i++)
 					for (auto j = 1; j < 256; j++)
 					{
-						auto price = predict(grid_size, block_size, m, n, k, previous_results);
-						if (price1 < price) continue;
+						auto price2 = predict(i, j, m, n, k, previous_results);
+						if (price1 < price2) continue;
 						grid_size1 = i;
 						block_size1 = j;
-						price1 = price;
+						price1 = price2;
 					}
 				// выполняем вычисления с параметрами при которых предсказанная цена минимальна
 				price1 = body(grid_size1, block_size1, m, n, k, count);
