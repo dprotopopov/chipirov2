@@ -82,6 +82,8 @@ static const int _m = 2;
 static const int _n = 2;
 static const int _grid_size = 1;
 static const int _block_size = 255;
+static const int _gmax = 16;
+static const int _bmax = 1024;
 
 int main(int argc, char* argv[])
 {
@@ -91,6 +93,8 @@ int main(int argc, char* argv[])
 	char* output_file_name = nullptr;
 	char* previous_results_file_name = nullptr;
 
+	auto gmax = _gmax;
+	auto bmax = _bmax;
 	auto m = _m;
 	auto n = _n;
 	auto grid_size = _grid_size;
@@ -116,6 +120,8 @@ int main(int argc, char* argv[])
 		else if (strcmp(argv[i], "n") == 0) n = atoi(argv[++i]);
 		else if (strcmp(argv[i], "g") == 0) grid_size = atoi(argv[++i]);
 		else if (strcmp(argv[i], "b") == 0) block_size = atoi(argv[++i]);
+		else if (strcmp(argv[i], "-gmax") == 0) gmax = atoi(argv[++i]);
+		else if (strcmp(argv[i], "-bmax") == 0) bmax = atoi(argv[++i]);
 	}
 
 	if (input_file_name != nullptr) freopen(input_file_name, "r", stdin);
@@ -158,8 +164,8 @@ int main(int argc, char* argv[])
 			int grid_size1;
 			int block_size1;
 			double price1 = DBL_MAX;
-			for (auto i = 1; i < 32; i++)
-				for (auto j = 1; j < 1024; j++)
+			for (auto i = 1; i <= gmax; i++)
+				for (auto j = 1; j <= bmax; j++)
 				{
 					auto price2 = predict(log(i), log(j), log(m), log(n), previous_results);
 					if (price1 < price2) continue;
