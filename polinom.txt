@@ -1,0 +1,9 @@
+f(x1)=y1
+f(x2)=y2
+...
+f(xk)=yk
+
+P(x) = SUMi yi * Пj<>i (x-xj)/(xi-xj)
+P(x) = SUMi yi * Пj<>i L(x,xj)/L(xi,xj)
+P(x) = SUMi yi * Пj<>i L(x,xj,s)/L(xi,xj,s)
+

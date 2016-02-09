@@ -59,28 +59,33 @@ double delta(std::vector<double> x, std::vector<double> y)
 // Возвращает предсказание цены для указанных параметров исходя из исторических данных
 double predict(int grid_size, int block_size, size_t m, size_t n, size_t k, std::vector<t_previous_result> & previous_results)
 {
-		std::vector<double> x1;
-		x1.push_back(m);
-		x1.push_back(n);
-		x1.push_back(k);
-		x1.push_back(grid_size);
-		x1.push_back(block_size);
-		auto sy = 0.0;
-		auto sw = 0.0;
-		for (auto it = previous_results.begin(); it != previous_results.end(); ++it)
+	std::vector<double> x;
+	x.push_back(m);
+	x.push_back(n);
+	x.push_back(grid_size);
+	x.push_back(block_size);
+	auto y = 0.0;
+	for (auto iti = previous_results.begin(); iti != previous_results.end(); ++iti)
+	{
+		auto s = iti->price;
+		std::vector<double> xi;
+		xi.push_back(iti->m);
+		xi.push_back(iti->n);
+		xi.push_back(iti->grid_size);
+		xi.push_back(iti->block_size);
+		for (auto itj = previous_results.begin(); itj != previous_results.end(); ++itj)
 		{
-			std::vector<double> x2;
-			x2.push_back(it->m);
-			x2.push_back(it->n);
-			x2.push_back(it->k);
-			x2.push_back(it->grid_size);
-			x2.push_back(it->block_size);
-
-			auto w = 1.0/(1.0+delta(x1, x2));
-			sy += it->price*w;
-			sw += w;
+			if (iti == itj) continue;
+			std::vector<double> xj;
+			xj.push_back(itj->m);
+			xj.push_back(itj->n);
+			xj.push_back(itj->grid_size);
+			xj.push_back(itj->block_size);
+			s *= delta(x, xj) / delta(xi, xj);
 		}
-		return sy / sw;
+		y += s;
+	}
+	return y;
 }
 
 __global__ void matrix_mul_kernel(double *a, double *b, double *c, size_t m, size_t n, size_t k)
