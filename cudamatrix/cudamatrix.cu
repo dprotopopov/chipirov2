@@ -146,8 +146,8 @@ t_mode mode = DEFAULT;
 /////////////////////////////////////////////////////////
 // Дефолтные значения
 static const unsigned _count = 1;
-static const int _m = 2;
-static const int _n = 2;
+static const int _mul = 2;
+static const int _add = 2;
 static const int _k = 2;
 static const int _grid_size = 1;
 static const int _block_size = 255;
@@ -162,8 +162,8 @@ int main(int argc, char* argv[])
 	char* output_file_name = NULL;
 	char* previous_results_file_name = NULL;
 
-	auto m = _m;
-	auto n = _n;
+	auto m = _mul;
+	auto n = _add;
 	auto k = _k;
 	auto grid_size = _grid_size;
 	auto block_size = _block_size;
