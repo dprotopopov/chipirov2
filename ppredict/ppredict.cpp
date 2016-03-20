@@ -12,9 +12,11 @@ struct t_previous_result
 {
 	double mul;
 	double add;
+	double rot;
+	double inv;
 	double grid_size;
 	double block_size;
-	double price;
+	double energy;
 };
 
 /////////////////////////////////////////////////////////
@@ -40,7 +42,7 @@ double scalar(std::vector<double>& x, std::vector<double>& y, std::vector<double
 
 /////////////////////////////////////////////////////////
 // Возвращает предсказание цены для указанных параметров исходя из исторических данных
-double predict(double mul, double add, double grid_size, double block_size, 
+double predict(double mul, double add, double rot, double inv, double grid_size, double block_size,
 	std::vector<t_previous_result>& previous_results, 
 	std::vector<double>& s2, 
 	int p)
@@ -48,6 +50,8 @@ double predict(double mul, double add, double grid_size, double block_size,
 	std::vector<double> x;
 	x.push_back(mul);
 	x.push_back(add);
+	x.push_back(rot);
+	x.push_back(inv);
 	x.push_back(grid_size);
 	x.push_back(block_size);
 	std::vector<std::pair<t_previous_result, double>> neighbors;
@@ -56,6 +60,8 @@ double predict(double mul, double add, double grid_size, double block_size,
 		std::vector<double> x2;
 		x2.push_back(it->mul);
 		x2.push_back(it->add);
+		x2.push_back(it->rot);
+		x2.push_back(it->inv);
 		x2.push_back(it->grid_size);
 		x2.push_back(it->block_size);
 		auto d = delta(x, x2, s2);
@@ -71,10 +77,12 @@ double predict(double mul, double add, double grid_size, double block_size,
 	auto y = 0.0;
 	for (auto iti = neighbors.begin(); iti != neighbors.end(); ++iti)
 	{
-		auto s = iti->first.price;
+		auto s = iti->first.energy;
 		std::vector<double> xi;
 		xi.push_back(iti->first.mul);
 		xi.push_back(iti->first.add);
+		xi.push_back(iti->first.rot);
+		xi.push_back(iti->first.inv);
 		xi.push_back(iti->first.grid_size);
 		xi.push_back(iti->first.block_size);
 		for (auto itj = neighbors.begin(); itj != neighbors.end(); ++itj)
@@ -85,6 +93,8 @@ double predict(double mul, double add, double grid_size, double block_size,
 			std::vector<double> xixj;
 			xj.push_back(itj->first.mul);
 			xj.push_back(itj->first.add);
+			xj.push_back(itj->first.rot);
+			xj.push_back(itj->first.inv);
 			xj.push_back(itj->first.grid_size);
 			xj.push_back(itj->first.block_size);
 			for (auto i = 0; i < x.size() && i < xj.size(); i++) xxj.push_back(x[i] - xj[i]);
@@ -106,8 +116,10 @@ t_mode mode = THEBEST;
 
 /////////////////////////////////////////////////////////
 // Дефолтные значения
-static const double _mul = 2;
-static const double _add = 2;
+static const double _mul = 0;
+static const double _add = 0;
+static const double _rot = 0;
+static const double _inv = 0;
 static const int _p = 3;
 static const int _grid_size = 1;
 static const int _block_size = 255;
@@ -117,7 +129,7 @@ static const int _bmax = 1024;
 int main(int argc, char* argv[])
 {
 	std::vector<t_previous_result> previous_results;
-	std::vector<double> s2(4, 1.0);
+	std::vector<double> s2(6, 1.0);
 	char* input_file_name = nullptr;
 	char* output_file_name = nullptr;
 	char* previous_results_file_name = nullptr;
@@ -127,6 +139,8 @@ int main(int argc, char* argv[])
 	auto p = _p;
 	auto mul = _mul;
 	auto add = _add;
+	auto rot = _rot;
+	auto inv = _inv;
 	auto grid_size = _grid_size;
 	auto block_size = _block_size;
 	
@@ -148,6 +162,8 @@ int main(int argc, char* argv[])
 		else if (strcmp(argv[i], "-history") == 0) previous_results_file_name = argv[++i];
 		else if (strcmp(argv[i], "mul") == 0) mul = atof(argv[++i]);
 		else if (strcmp(argv[i], "add") == 0) add = atof(argv[++i]);
+		else if (strcmp(argv[i], "rot") == 0) rot = atof(argv[++i]);
+		else if (strcmp(argv[i], "inv") == 0) inv = atof(argv[++i]);
 		else if (strcmp(argv[i], "g") == 0) grid_size = atoi(argv[++i]);
 		else if (strcmp(argv[i], "b") == 0) block_size = atoi(argv[++i]);
 		else if (strcmp(argv[i], "-gmax") == 0) gmax = atoi(argv[++i]);
@@ -160,12 +176,13 @@ int main(int argc, char* argv[])
 
 	if (previous_results_file_name != nullptr)
 	{
-		std::vector<double> m1(4, 0.0);
-		std::vector<double> m2(4, 0.0);
-		std::vector<double> mx(4, 0.0);
+		std::vector<double> m1(6, 0.0);
+		std::vector<double> m2(6, 0.0);
+		std::vector<double> mx(6, 0.0);
 		std::ifstream history(previous_results_file_name);
 		if (!history.is_open()) throw "Error opening file";
 		std::string line;
+		std::getline(history, line); // first line
 		while (std::getline(history, line))
 		{
 			std::stringstream lineStream(line);
@@ -174,42 +191,52 @@ int main(int argc, char* argv[])
 			while(std::getline(lineStream, item, ';')) items.push_back(item);
 			double mul = atof(items[0].c_str());
 			double add = atof(items[1].c_str());
-			double grid_size = atof(items[2].c_str());
-			double block_size = atof(items[3].c_str());
-			double price = atof(items[4].c_str());
+			double rot = atof(items[2].c_str());
+			double inv = atof(items[3].c_str());
+			double grid_size = atof(items[4].c_str());
+			double block_size = atof(items[5].c_str());
+			double energy = atof(items[6].c_str());
 			t_previous_result previous_result;
 			previous_result.mul = mul;
 			previous_result.add = add;
+			previous_result.rot = rot;
+			previous_result.inv = inv;
 			previous_result.grid_size = grid_size;
 			previous_result.block_size = block_size;
-			previous_result.price = price;
+			previous_result.energy = energy;
 			previous_results.push_back(previous_result);
 			m1[0] += mul;
 			m1[1] += add;
-			m1[2] += grid_size;
-			m1[3] += block_size;
+			m1[2] += rot;
+			m1[3] += inv;
+			m1[4] += grid_size;
+			m1[5] += block_size;
 			m2[0] += mul * mul;
 			m2[1] += add * add;
-			m2[2] += grid_size * grid_size;
-			m2[3] += block_size * block_size;
+			m2[2] += rot * rot;
+			m2[3] += inv * inv;
+			m2[4] += grid_size * grid_size;
+			m2[5] += block_size * block_size;
 			mx[0] = std::max(mx[0], mul);
 			mx[1] = std::max(mx[1], add);
-			mx[2] = std::max(mx[2], grid_size);
-			mx[3] = std::max(mx[3], block_size);
+			mx[2] = std::max(mx[2], rot);
+			mx[3] = std::max(mx[3], inv);
+			mx[4] = std::max(mx[4], grid_size);
+			mx[5] = std::max(mx[5], block_size);
 		}
 		for (auto it = m1.begin(); it != m1.end(); ++it) *it /= previous_results.size();
 		for (auto it = m2.begin(); it != m2.end(); ++it) *it /= previous_results.size();
 		auto i = 0;
 		for (auto it = s2.begin(); it != s2.end(); ++it, ++i) *it = m2[i] - m1[i] * m1[i];
 		// for (auto it = s2.begin(); it != s2.end(); ++it, ++i) *it = mx[i];
-		//std::cout << s2[0] << ' ' << s2[1] << ' ' << s2[2] << ' ' << s2[3] << std::endl;
+		// std::cout << s2[0] << ' ' << s2[1] << ' ' << s2[2] << ' ' << s2[3] << ' ' << s2[4] << ' ' << s2[5] << std::endl;
 	}
 	switch (mode)
 	{
 	case PREDICTONLY:
 		{
-			auto price = predict(mul, add, grid_size, block_size, previous_results, s2, p);
-			std::cout << mul << ' ' << add << ' ' << ' ' << grid_size << ' ' << block_size << ' ' << price << std::endl;
+			auto price = predict(mul, add, rot, inv, grid_size, block_size, previous_results, s2, p);
+			std::cout << mul << ' ' << add << ' ' << rot << ' ' << inv << ' ' << grid_size << ' ' << block_size << ' ' << price << std::endl;
 		}
 		break;
 	case THEBEST:
@@ -221,13 +248,13 @@ int main(int argc, char* argv[])
 			for (auto i = 1; i <= gmax; i++)
 				for (auto j = 1; j <= bmax; j++)
 				{
-					auto price2 = predict(mul, add, i, j, previous_results, s2, p);
+					auto price2 = predict(mul, add, rot, inv, i, j, previous_results, s2, p);
 					if (price1 < price2) continue;
 					grid_size1 = i;
 					block_size1 = j;
 					price1 = price2;
 				}
-			std::cout << mul << ' ' << add << ' ' << ' ' << grid_size1 << ' ' << block_size1 << ' ' << price1 << std::endl;
+			std::cout << mul << ' ' << add << ' ' << rot << ' ' << inv << ' ' << grid_size1 << ' ' << block_size1 << ' ' << price1 << std::endl;
 		}
 		break;
 	}

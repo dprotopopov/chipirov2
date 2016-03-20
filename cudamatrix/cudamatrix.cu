@@ -40,7 +40,7 @@ struct t_previous_result
 	int k;
 	int grid_size;
 	int block_size;
-	double price;
+	double energy;
 };
 
 /////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ double predict(int grid_size, int block_size, size_t m, size_t n, size_t k, std:
 	auto y = 0.0;
 	for (auto iti = previous_results.begin(); iti != previous_results.end(); ++iti)
 	{
-		auto s = iti->price;
+		auto s = iti->energy;
 		std::vector<double> xi;
 		xi.push_back(iti->m);
 		xi.push_back(iti->n);
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 			previous_result.k = k;
 			previous_result.grid_size = grid_size;
 			previous_result.block_size = block_size;
-			previous_result.price = price;
+			previous_result.energy = price;
 			previous_results.push_back(previous_result);
 		}
 	}
